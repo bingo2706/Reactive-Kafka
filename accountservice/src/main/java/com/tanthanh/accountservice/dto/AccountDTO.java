@@ -14,17 +14,10 @@ public class AccountDTO {
     private String currency;
     private double balance;
     private double reserved;
-    private boolean isCheckBalance;
 
-    public  Account toModel(){
-        return Account.builder()
-                .email(this.getEmail())
-                .currency(this.getCurrency())
-                .balance(this.getBalance())
-                .reserved(this.getReserved())
-                .build();
-    }
-    public static AccountDTO fromModel(Account account){
+
+
+    public static AccountDTO entityToModel(Account account){
         return AccountDTO.builder()
                 .email(account.getEmail())
                 .currency(account.getCurrency())

@@ -1,4 +1,4 @@
-package com.tanthanh.accountservice.service.iml.exception;
+package com.tanthanh.paymentservice.Exception;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

@@ -1,21 +1,19 @@
 package com.tanthanh.accountservice.event;
 
 import com.google.gson.Gson;
-import com.tanthanh.accountservice.dto.AccountDTO;
+import com.tanthanh.accountservice.dto.PaymentDTO;
 import com.tanthanh.accountservice.service.iml.IAccountService;
 import com.tanthanh.accountservice.utils.Constant;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Mono;
 import reactor.kafka.receiver.KafkaReceiver;
 import reactor.kafka.receiver.ReceiverOptions;
 import reactor.kafka.receiver.ReceiverRecord;
 import reactor.kafka.sender.KafkaSender;
-import reactor.kafka.sender.SenderRecord;
 
 import java.util.Collections;
+import java.util.Objects;
 
 @Service
 @Slf4j
@@ -29,30 +27,36 @@ public class EventConsumer {
     @Autowired
     private KafkaSender<String, String> sender;
 
+    @Autowired
+    private EventProducer eventProducer;
     public EventConsumer(ReceiverOptions<String, String> ReceiverOptions){
-        KafkaReceiver.create(ReceiverOptions.subscription(Collections.singleton(Constant.CHECK_BALANCE_TOPIC)))
-                .receive().subscribe(this::printText);
+
+        KafkaReceiver.create(ReceiverOptions.subscription(Collections.singleton(Constant.PAYMENT_REQUEST_TOPIC)))
+                .receive().subscribe(this::paymentRequest);
+        KafkaReceiver.create(ReceiverOptions.subscription(Collections.singleton(Constant.PAYMENT_COMPLETED_TOPIC)))
+                .receive().subscribe(this::paymentComplete);
     }
-    public void printText(ReceiverRecord <String,String> receiverRecord){
 
-            AccountDTO dto = new AccountDTO();
-            dto = gson.fromJson(receiverRecord.value(),AccountDTO.class);
-
-
-        log.info(receiverRecord.value());
-
-        AccountDTO finalDto = dto;
-        accountService.checkBalance(dto.getBalance(),dto.getEmail()).subscribe(aBoolean ->  {
-            log.info("Check balance of account "+ finalDto.getEmail()+" is "+aBoolean);
-            if (aBoolean)  finalDto.setCheckBalance(true);
-            else finalDto.setCheckBalance(false);
-
-            sender
-                    .send(Mono.just(SenderRecord.create(new ProducerRecord<>(Constant.RES_BALANCE_TOPIC,gson.toJson(finalDto)),gson.toJson(finalDto))))
-                    .then()
-                    .doOnError(e -> log.error("Send failed", e))
-                    .doOnSuccess(sender -> log.info("Success ! "+sender))
-                    .subscribe();
-        });
+    public void paymentRequest(ReceiverRecord <String,String> receiverRecord){
+        PaymentDTO dto = gson.fromJson(receiverRecord.value(),PaymentDTO.class);
+        accountService.reserved(dto.getAmount(),dto.getAccountId())
+                .subscribe(isReversedSuccessful -> {
+                    if(!isReversedSuccessful){
+                        dto.setStatus(Constant.STATUS_PAYMENT_REJECTED);
+                        eventProducer.sendPaymentComplete(Constant.PAYMENT_COMPLETED_TOPIC,gson.toJson(dto));
+                    }else {
+                        dto.setStatus(Constant.STATUS_PAYMENT_PROCESSING);
+                        eventProducer.sendPaymentCreated(Constant.PAYMENT_CREATED_TOPIC,gson.toJson(dto));
+                    }
+                });
     }
+    public void paymentComplete(ReceiverRecord <String,String> receiverRecord){
+        log.info("Payment Complete event");
+        PaymentDTO dto = gson.fromJson(receiverRecord.value(),PaymentDTO.class);
+        if(Objects.equals(dto.getStatus(), Constant.STATUS_PAYMENT_CREATING)){
+            accountService.subtract(dto.getAmount(),dto.getAccountId()).subscribe(accountDTO -> log.info("Subtract Success: "+accountDTO.toString()));
+        }
+
+    }
+   
 }

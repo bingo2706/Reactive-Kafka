@@ -14,5 +14,8 @@ public class AccountDTO {
     private String currency;
     private double balance;
     private double reserved;
-    private boolean isCheckBalance;
+
+
+
+
 }

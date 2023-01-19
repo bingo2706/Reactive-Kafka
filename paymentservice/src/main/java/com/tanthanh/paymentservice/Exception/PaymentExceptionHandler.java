@@ -1,4 +1,4 @@
-package com.tanthanh.accountservice.service.iml.exception;
+package com.tanthanh.paymentservice.Exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -6,11 +6,11 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
-public class AccountExceptionHandler {
+public class PaymentExceptionHandler {
 
-    @ExceptionHandler(AccountException.class)
+    @ExceptionHandler(PaymentException.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public ErrorMessage handleReservedGreaterThanBalance(AccountException ex){
+    public ErrorMessage handleReservedGreaterThanBalance(PaymentException ex){
         return ErrorMessage.builder().message(ex.getMessage()).build();
     }
 
