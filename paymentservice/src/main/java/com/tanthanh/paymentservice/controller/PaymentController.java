@@ -23,4 +23,5 @@ public class PaymentController {
     public Flux<PaymentDTO> payment(@PathVariable int id){
         return paymentService.getAllPayment(id);
     }
+
 }

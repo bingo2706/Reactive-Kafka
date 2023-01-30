@@ -41,11 +41,13 @@ public class EventConsumer {
         PaymentDTO dto = gson.fromJson(receiverRecord.value(),PaymentDTO.class);
         accountService.reserved(dto.getAmount(),dto.getAccountId())
                 .subscribe(isReversedSuccessful -> {
-                    if(!isReversedSuccessful){
+                    if(isReversedSuccessful == 0){
                         dto.setStatus(Constant.STATUS_PAYMENT_REJECTED);
+                        dto.setReserved(false);
                         eventProducer.sendPaymentComplete(Constant.PAYMENT_COMPLETED_TOPIC,gson.toJson(dto));
                     }else {
                         dto.setStatus(Constant.STATUS_PAYMENT_PROCESSING);
+                        dto.setReserved(true);
                         eventProducer.sendPaymentCreated(Constant.PAYMENT_CREATED_TOPIC,gson.toJson(dto));
                     }
                 });
@@ -53,8 +55,21 @@ public class EventConsumer {
     public void paymentComplete(ReceiverRecord <String,String> receiverRecord){
         log.info("Payment Complete event");
         PaymentDTO dto = gson.fromJson(receiverRecord.value(),PaymentDTO.class);
-        if(Objects.equals(dto.getStatus(), Constant.STATUS_PAYMENT_CREATING)){
-            accountService.subtract(dto.getAmount(),dto.getAccountId()).subscribe(accountDTO -> log.info("Subtract Success: "+accountDTO.toString()));
+        if(Objects.equals(dto.getStatus(), Constant.STATUS_PAYMENT_SUCCESSFUL)){
+            accountService.subtract(dto.getAmount(),dto.getAccountId()).subscribe(isSuccessful -> {
+                if(isSuccessful == 1) log.info("Subtract successfully");
+                else log.info("Subtract failed");
+            } );
+        }else{
+            if(dto.isReserved()){
+                accountService.rollBackReserved(dto.getAmount(),dto.getAccountId()).subscribe(isSuccessful -> {
+                    if(isSuccessful == 1) log.info("Rollback reserved successfully");
+                    else log.info("Rollback reserved failed");
+                } );
+            }else{
+                log.info("Can't reserved");
+            }
+
         }
 
     }

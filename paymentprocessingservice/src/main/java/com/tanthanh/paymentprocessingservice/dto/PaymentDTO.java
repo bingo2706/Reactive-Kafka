@@ -12,5 +12,5 @@ public class PaymentDTO {
     private int accountId;
     private double amount;
     private String status;
-
+    private boolean isReserved;
 }

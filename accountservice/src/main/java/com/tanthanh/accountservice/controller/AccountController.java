@@ -1,7 +1,9 @@
 package com.tanthanh.accountservice.controller;
 
 import com.tanthanh.accountservice.dto.AccountDTO;
+import com.tanthanh.accountservice.dto.PaymentDTO;
 import com.tanthanh.accountservice.service.iml.IAccountService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
@@ -9,6 +11,7 @@ import reactor.core.publisher.Mono;
 
 @RestController
 @RequestMapping("/api/v1/accounts")
+@Slf4j
 public class AccountController {
 
     @Autowired

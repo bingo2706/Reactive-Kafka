@@ -20,29 +20,31 @@ public class AccountService implements IAccountService {
     @Autowired
     private  KafkaSender<String, String> sender;
 
-
     @Override
-    public Mono<AccountDTO> subtract(double amount, long id) {
+    public Mono<Integer> rollBackReserved(double reserved, long id) {
         return accountRepository.findById(id)
                 .flatMap(account -> {
-                    account.setReserved(account.getReserved()-amount);
-                    account.setBalance(account.getBalance()-amount);
-                    return accountRepository.save(account);
+                        account.setReserved(account.getReserved()-reserved);
+                        return accountRepository.rollbackReserved(account.getId(),account.getReserved()).last();
                 })
-                .map(AccountDTO::entityToModel)
                 .switchIfEmpty(Mono.error(new AccountException("Account not found")));
     }
 
     @Override
-    public Mono<Boolean> reserved(double reserved, long id) {
+    public Mono<Integer> subtract(double amount, long id) {
         return accountRepository.findById(id)
                 .flatMap(account -> {
-                    if(reserved+ account.getReserved() <= account.getBalance()){
-                        account.setReserved(account.getReserved()+reserved);
-                        accountRepository.save(account).subscribe();
-                        return Mono.just(true);
-                    }else return Mono.just(false);
+                    account.setReserved(account.getReserved()-amount);
+                    account.setBalance(account.getBalance()-amount);
+                    return accountRepository.subtract(account.getId(),account.getReserved(),account.getBalance()).last();
                 })
+                .switchIfEmpty(Mono.error(new AccountException("Account not found")));
+    }
+
+    @Override
+    public Mono<Integer> reserved(double reserved, long id) {
+        return accountRepository.findById(id)
+                .flatMap(account -> accountRepository.reserved(account.getId(),reserved).last())
                 .switchIfEmpty(Mono.error(new AccountException("Account not found")));
     }
     @Override
@@ -56,9 +58,6 @@ public class AccountService implements IAccountService {
     public Flux<AccountDTO> getAllAccount() {
         return accountRepository.findAll()
                 .map(AccountDTO::entityToModel)
-                .delayElements(Duration.ofSeconds(1))
-                .doFirst(() -> log.info("Retrieving all account"))
-                .doOnNext(account -> log.info("Account found: {}", account))
                 .doOnError(ex -> log.warn("Something went wrong while retrieving the accounts", ex));
 
     }

@@ -12,6 +12,7 @@ import reactor.kafka.receiver.ReceiverRecord;
 import reactor.kafka.sender.KafkaSender;
 
 import java.util.Collections;
+import java.util.Random;
 
 @Service
 @Slf4j
@@ -33,8 +34,11 @@ public class EventConsumer {
         try {
             log.info("Processing payment ...");
             PaymentDTO dto = gson.fromJson(receiverRecord.value(),PaymentDTO.class);
-            dto.setStatus(Constant.STATUS_PAYMENT_SUCCESSFUL);
-            Thread.sleep(3000);
+            String[] randomStatus = {Constant.STATUS_PAYMENT_SUCCESSFUL,Constant.STATUS_PAYMENT_REJECTED};
+            Random random = new Random();
+            int index = random.nextInt(randomStatus.length);
+            dto.setStatus(randomStatus[index]);
+            Thread.sleep(7000);
             eventProducer.sendPaymentComplete(Constant.PAYMENT_COMPLETED_TOPIC,gson.toJson(dto));
         } catch (InterruptedException e) {
             throw new RuntimeException(e);

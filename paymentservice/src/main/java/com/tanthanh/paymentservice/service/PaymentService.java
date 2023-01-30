@@ -1,25 +1,20 @@
 package com.tanthanh.paymentservice.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.tanthanh.paymentservice.Exception.ErrorMessage;
 import com.tanthanh.paymentservice.Exception.PaymentException;
-import com.tanthanh.paymentservice.data.Payment;
 import com.tanthanh.paymentservice.dto.AccountDTO;
 import com.tanthanh.paymentservice.dto.PaymentDTO;
 import com.tanthanh.paymentservice.event.EventProducer;
 import com.tanthanh.paymentservice.repository.PaymentRepository;
 import com.tanthanh.paymentservice.utils.Constant;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.client.circuitbreaker.ReactiveCircuitBreakerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.kafka.sender.KafkaSender;
-import reactor.kafka.sender.SenderRecord;
 
 import java.util.Objects;
 
@@ -35,6 +30,7 @@ public class PaymentService {
     WebClient webClientAccount;
     @Autowired
     EventProducer eventProducer;
+
 
     public Mono<PaymentDTO> payment(PaymentDTO paymentDTO){
         return webClientAccount.get()
@@ -55,10 +51,8 @@ public class PaymentService {
                     }
                      return createNewPayment(paymentDTO);
                 });
-
-
-
     }
+
     public Flux<PaymentDTO> getAllPayment(int id){
         return paymentRepository.findByAccountId(id)
                 .map(PaymentDTO::entityToDto)
