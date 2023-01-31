@@ -1,6 +1,7 @@
 package com.tanthanh.paymentservice.service;
 
 import com.google.gson.Gson;
+import com.tanthanh.commonservice.common.CommonException;
 import com.tanthanh.paymentservice.Exception.ErrorMessage;
 import com.tanthanh.paymentservice.Exception.PaymentException;
 import com.tanthanh.paymentservice.dto.AccountDTO;
@@ -10,6 +11,7 @@ import com.tanthanh.paymentservice.repository.PaymentRepository;
 import com.tanthanh.paymentservice.utils.Constant;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
@@ -44,10 +46,14 @@ public class PaymentService {
                                         .flatMap(errorMessage ->
                                                 Mono.error(new PaymentException(errorMessage.getMessage()))))
                 .flatMap(accountDTO -> {
+
                     if(paymentDTO.getAmount() <= accountDTO.getBalance()){
                         paymentDTO.setStatus(Constant.STATUS_PAYMENT_CREATING);
                     }else{
                         paymentDTO.setStatus(Constant.STATUS_PAYMENT_REJECTED);
+                        createNewPayment(paymentDTO).subscribe();
+                        throw new CommonException("P01", "Balance not enough", HttpStatus.BAD_REQUEST);
+
                     }
                      return createNewPayment(paymentDTO);
                 });
@@ -56,7 +62,7 @@ public class PaymentService {
     public Flux<PaymentDTO> getAllPayment(int id){
         return paymentRepository.findByAccountId(id)
                 .map(PaymentDTO::entityToDto)
-                .switchIfEmpty(Mono.error(new PaymentException("Account don't have payment")));
+                .switchIfEmpty(Mono.error(new CommonException("P02", "Account don't have payment", HttpStatus.NOT_FOUND)));
 
     }
     public Mono<PaymentDTO> createNewPayment(PaymentDTO paymentDTO){
@@ -64,7 +70,6 @@ public class PaymentService {
                 .map(PaymentDTO::dtoToEntity)
                 .flatMap(payment -> paymentRepository.save(payment))
                 .map(PaymentDTO::entityToDto)
-                .onErrorMap(ex -> new PaymentException(ex.getMessage()))
                 .doOnError(throwable -> log.error(throwable.getMessage()))
                 .doOnSuccess(paymentDTO1 -> {
                     if(Objects.equals(paymentDTO1.getStatus(), Constant.STATUS_PAYMENT_CREATING))
@@ -73,6 +78,7 @@ public class PaymentService {
     }
     public Mono<PaymentDTO> updateStatusPayment(PaymentDTO paymentDTO){
         return paymentRepository.findById((int)paymentDTO.getId())
+                .switchIfEmpty(Mono.error(new CommonException("P03", "Payment not found", HttpStatus.NOT_FOUND)))
                 .flatMap(payment -> {
                     payment.setStatus(paymentDTO.getStatus());
                     return paymentRepository.save(payment);

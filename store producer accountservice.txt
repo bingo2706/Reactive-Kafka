@@ -1,0 +1,55 @@
+reservedAccount
+===
+BEGIN
+   START TRANSACTION;
+   SELECT @reserved:=reserved,@balance:=balance FROM account WHERE id = accountId FOR UPDATE;
+   IF(@reserved+amount <= @balance) THEN
+   		UPDATE account SET reserved = reserved + amount
+        WHERE id = accountId;
+        IF(ROW_COUNT()>0) THEN
+        	SELECT true INTO result;
+            COMMIT;
+        ELSE
+        	SELECT false INTO result;
+            ROLLBACK;
+        END IF;
+   ELSE
+   		SELECT false INTO result;
+        ROLLBACK;
+   END IF;
+END
+======
+rollbackReserved
+=======================
+BEGIN
+   START TRANSACTION;
+   SELECT * FROM account WHERE id = accountId FOR UPDATE;
+   		UPDATE account SET reserved = amount
+        WHERE id = accountId;
+        IF(ROW_COUNT()>0) THEN
+        	SELECT true INTO result;
+            COMMIT;
+        ELSE
+        	SELECT false INTO result;
+            ROLLBACK;
+        END IF;
+   
+END
+====
+subtractAccount
+======================
+BEGIN
+   START TRANSACTION;
+   SELECT * FROM account WHERE id = accountId FOR UPDATE;
+   		UPDATE account SET reserved = amountReserved,
+        balance = amountBalance
+        WHERE id = accountId;
+        IF(ROW_COUNT()>0) THEN
+        	SELECT true INTO result;
+            COMMIT;
+        ELSE
+        	SELECT false INTO result;
+            ROLLBACK;
+        END IF;
+  
+END

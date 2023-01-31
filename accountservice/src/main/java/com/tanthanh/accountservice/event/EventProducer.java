@@ -15,20 +15,20 @@ public class EventProducer {
     @Autowired
     private KafkaSender<String, String> sender;
 
-    public void sendPaymentComplete(String topic,String message){
-        sender
+    public Mono<String> sendPaymentComplete(String topic,String message){
+        return sender
                 .send(Mono.just(SenderRecord.create(new ProducerRecord<>(topic,message),message)))
                 .then()
                 .doOnError(e -> log.error("Send event Payment Complete Failed", e))
-                .doOnSuccess(sender -> log.info("Send event Payment Complete Success ! "))
-                .subscribe();
+                .doOnSuccess(ret -> log.info("Send event Payment Complete Success ! "))
+                .thenReturn("OK");
     }
-    public void sendPaymentCreated(String topic,String message){
-        sender
+    public Mono<String> sendPaymentCreated(String topic,String message){
+        return sender
                 .send(Mono.just(SenderRecord.create(new ProducerRecord<>(topic,message),message)))
                 .then()
                 .doOnError(e -> log.error("Send event Payment Created Failed", e))
-                .doOnSuccess(sender -> log.info("Send event Payment Created Success ! "))
-                .subscribe();
+                .doOnSuccess(ret -> log.info("Send event Payment Created Success ! "))
+                .thenReturn("OK");
     }
 }

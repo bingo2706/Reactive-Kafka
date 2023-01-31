@@ -38,7 +38,7 @@ public class EventConsumer {
             Random random = new Random();
             int index = random.nextInt(randomStatus.length);
             dto.setStatus(randomStatus[index]);
-            Thread.sleep(7000);
+            Thread.sleep(3000);
             eventProducer.sendPaymentComplete(Constant.PAYMENT_COMPLETED_TOPIC,gson.toJson(dto));
         } catch (InterruptedException e) {
             throw new RuntimeException(e);

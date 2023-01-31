@@ -1,8 +1,7 @@
 package com.tanthanh.accountservice.controller;
 
-import com.tanthanh.accountservice.dto.AccountDTO;
-import com.tanthanh.accountservice.dto.PaymentDTO;
-import com.tanthanh.accountservice.service.iml.IAccountService;
+import com.tanthanh.accountservice.model.AccountDTO;
+import com.tanthanh.accountservice.service.AccountService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -15,10 +14,10 @@ import reactor.core.publisher.Mono;
 public class AccountController {
 
     @Autowired
-    IAccountService accountService;
+    AccountService accountService;
 
     @GetMapping()
-    public Flux<AccountDTO> GetAllAccount(){
+    public Flux<AccountDTO> getAllAccount(){
 
         return accountService.getAllAccount();
     }

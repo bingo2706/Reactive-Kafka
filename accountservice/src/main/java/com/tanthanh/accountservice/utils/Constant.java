@@ -10,4 +10,8 @@ public class Constant {
     public static final String STATUS_PAYMENT_REJECTED = "REJECTED";
     public static final String STATUS_PAYMENT_PROCESSING = "PROCESSING";
     public static final String STATUS_PAYMENT_SUCCESSFUL = "SUCCESSFUL";
+
+    private Constant(){
+
+    }
 }

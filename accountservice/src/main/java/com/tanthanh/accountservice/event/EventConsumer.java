@@ -1,8 +1,8 @@
 package com.tanthanh.accountservice.event;
 
 import com.google.gson.Gson;
-import com.tanthanh.accountservice.dto.PaymentDTO;
-import com.tanthanh.accountservice.service.iml.IAccountService;
+import com.tanthanh.accountservice.model.PaymentDTO;
+import com.tanthanh.accountservice.service.AccountService;
 import com.tanthanh.accountservice.utils.Constant;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,18 +22,18 @@ public class EventConsumer {
     Gson gson = new Gson();
 
     @Autowired
-    IAccountService accountService;
+    AccountService accountService;
 
     @Autowired
     private KafkaSender<String, String> sender;
 
     @Autowired
     private EventProducer eventProducer;
-    public EventConsumer(ReceiverOptions<String, String> ReceiverOptions){
+    public EventConsumer(ReceiverOptions<String, String> receiverOptions){
 
-        KafkaReceiver.create(ReceiverOptions.subscription(Collections.singleton(Constant.PAYMENT_REQUEST_TOPIC)))
+        KafkaReceiver.create(receiverOptions.subscription(Collections.singleton(Constant.PAYMENT_REQUEST_TOPIC)))
                 .receive().subscribe(this::paymentRequest);
-        KafkaReceiver.create(ReceiverOptions.subscription(Collections.singleton(Constant.PAYMENT_COMPLETED_TOPIC)))
+        KafkaReceiver.create(receiverOptions.subscription(Collections.singleton(Constant.PAYMENT_COMPLETED_TOPIC)))
                 .receive().subscribe(this::paymentComplete);
     }
 
@@ -44,11 +44,11 @@ public class EventConsumer {
                     if(isReversedSuccessful == 0){
                         dto.setStatus(Constant.STATUS_PAYMENT_REJECTED);
                         dto.setReserved(false);
-                        eventProducer.sendPaymentComplete(Constant.PAYMENT_COMPLETED_TOPIC,gson.toJson(dto));
+                        eventProducer.sendPaymentComplete(Constant.PAYMENT_COMPLETED_TOPIC,gson.toJson(dto)).subscribe();
                     }else {
                         dto.setStatus(Constant.STATUS_PAYMENT_PROCESSING);
                         dto.setReserved(true);
-                        eventProducer.sendPaymentCreated(Constant.PAYMENT_CREATED_TOPIC,gson.toJson(dto));
+                        eventProducer.sendPaymentCreated(Constant.PAYMENT_CREATED_TOPIC,gson.toJson(dto)).subscribe();
                     }
                 });
     }
